@@ -1,0 +1,5 @@
+{
+  "inheritance": "AD",
+  "disease": "Affection mendélienne simulée",
+  "gene": "GENE_DEMO"
+}

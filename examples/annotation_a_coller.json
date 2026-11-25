@@ -1,0 +1,19 @@
+{
+  "chrom": "1",
+  "pos": 123,
+  "ref": "A",
+  "alt": "G",
+  "gene": "GENE_DEMO",
+  "transcript": "NM_DEMO.1",
+  "mane": "MANE Select",
+  "consequence": "missense_variant",
+  "revel": 0.91,
+  "revel_source": "REVEL simulé",
+  "population_source": "gnomAD v4.1 simulé",
+  "population_group": "groupe simulé",
+  "population_ac": 0,
+  "population_an": 82000,
+  "population_pass": true,
+  "population_eligible": true,
+  "population_absence_verified": true
+}

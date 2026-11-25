@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Classification ACMG des SNV</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">GRCh38 · Analyse locale</p>
+      <h1>Classification ACMG des SNV</h1>
+    </header>
+
+    <form id="analysis" autocomplete="off">
+      <section class="card" aria-labelledby="variant-title">
+        <h2 id="variant-title">Variant à interpréter</h2>
+        <label for="variant">Coordonnées GRCh38 (hg38)</label>
+        <textarea id="variant" name="variant" required rows="1"
+                  placeholder="chr1:12345:A:G" spellcheck="false"
+                  aria-describedby="variant-format"></textarea>
+        <p class="hint" id="variant-format">
+          Position à partir de 1. Saisissez un HGVS génomique,
+          une ligne VCF monoallélique ou des coordonnées avec REF et ALT.
+        </p>
+        <div id="context-prompt" class="notice" hidden></div>
+        <div id="disease-prompt" class="notice" hidden>
+          Précisez l’affection et la transmission du profil ClinGen VCEP.
+          Utilisez son identifiant MONDO lorsqu’il est disponible.
+        </div>
+        <div class="field-grid">
+          <div>
+            <label for="gene">Gène</label>
+            <input id="gene" name="gene" placeholder="Symbole HGNC"
+                   spellcheck="false">
+          </div>
+          <div>
+            <label for="transcript">Transcrit</label>
+            <input id="transcript" name="transcript"
+                   placeholder="NM_… avec version"
+                   spellcheck="false">
+          </div>
+          <div>
+            <label for="disease">Affection</label>
+            <input id="disease" name="disease"
+                   placeholder="Nom ou identifiant OMIM/MONDO">
+          </div>
+          <div>
+            <label for="inheritance">Mode de transmission</label>
+            <select id="inheritance" name="inheritance">
+              <option value="">À préciser</option>
+              <option value="AD">Autosomique dominante</option>
+              <option value="AR">Autosomique récessive</option>
+              <option value="XLD">Dominante liée à l’X</option>
+              <option value="XLR">Récessive liée à l’X</option>
+              <option value="XL">Liée à l’X, non précisée</option>
+              <option value="YL">Liée à l’Y</option>
+              <option value="OTHER">Autre</option>
+            </select>
+          </div>
+          <div>
+            <label for="mechanism">Mécanisme de la maladie</label>
+            <select id="mechanism" name="mechanism">
+              <option value="">À préciser</option>
+              <option value="LOF">Perte de fonction</option>
+              <option value="GOF">Gain de fonction</option>
+              <option value="DN">Effet dominant négatif</option>
+              <option value="OTHER">Autre</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <details class="card">
+        <summary>Annotations du variant</summary>
+        <label for="annotation">Données d’annotation</label>
+        <textarea id="annotation" name="annotation" rows="5"
+                  spellcheck="false"
+                  placeholder="JSON, TSV ou VCF annoté par VEP"></textarea>
+        <p class="hint" id="annotation-help">
+          Pour le VCF annoté, incluez l’en-tête VEP INFO/CSQ.
+        </p>
+        <label for="functional-file">Données fonctionnelles PS3 (TSV)</label>
+        <input id="functional-file" type="file"
+               accept=".tsv,.txt,text/plain,text/tab-separated-values">
+        <button type="button" class="secondary" id="clear-functional" hidden>
+          Retirer le tableau PS3
+        </button>
+        <p class="hint">
+          Colonnes obligatoires <code>variant</code>, <code>strength</code>
+          et <code>reason</code>. Encodage UTF-8.
+        </p>
+        <p class="hint" id="functional-status" aria-live="polite"></p>
+      </details>
+
+      <details class="card" id="clinical-section">
+        <summary>Contexte clinique et familial</summary>
+        <label for="phenotype">Résumé du phénotype</label>
+        <textarea id="phenotype" name="phenotype" rows="3"
+                  placeholder="Signes cliniques, codes HPO"></textarea>
+        <label for="targeted-genes">Gènes étudiés</label>
+        <input id="targeted-genes" name="targeted-genes"
+               placeholder="Symboles séparés par des virgules"
+               spellcheck="false">
+        <label for="segregation">Observations de ségrégation</label>
+        <textarea id="segregation" name="segregation" rows="3"
+                  placeholder="Génotypes, statut clinique, liens familiaux">
+        </textarea>
+        <div id="clinical-structured"></div>
+        <fieldset>
+          <legend>Variants associés et phase</legend>
+          <div id="phase-rows"></div>
+          <label class="checkbox">
+            <input id="phase-unrelated" type="checkbox">
+            Cas de phase indépendants
+          </label>
+          <button type="button" class="secondary" id="add-phase">
+            Ajouter un variant associé
+          </button>
+        </fieldset>
+        <details class="clinical-panel">
+          <summary>Contexte clinique avancé (JSON)</summary>
+          <label for="advanced-context">Objet JSON</label>
+          <textarea id="advanced-context" rows="5" spellcheck="false"
+                    placeholder='{"high_penetrance": true}'></textarea>
+          <p class="hint">
+            Les champs renseignés dans le formulaire priment sur le JSON.
+            Les confirmations sont saisies dans la section Relecture.
+          </p>
+        </details>
+      </details>
+
+      <details class="card" id="manual-section">
+        <summary>Critères évalués manuellement</summary>
+        <div id="manual-rows"></div>
+        <button type="button" class="secondary" id="add-criterion">
+          Ajouter un critère
+        </button>
+      </details>
+
+      <details class="card" id="review-section">
+        <summary>Relecture de la classification</summary>
+        <label class="checkbox">
+          <input id="reviewed" type="checkbox">
+          Classification relue par le biologiste
+        </label>
+        <label for="vcep-specification">Spécification VCEP appliquée</label>
+        <select id="vcep-specification">
+          <option value="">À préciser si plusieurs spécifications</option>
+        </select>
+        <label class="checkbox">
+          <input id="vcep-reviewed" type="checkbox">
+          Spécification VCEP relue pour ce cas
+        </label>
+        <label class="checkbox">
+          <input id="vcep-population-confirmed" type="checkbox">
+          Pour MYH7, population comparable à celle du profil VCEP
+        </label>
+        <label for="vcep-exclusion-reason">
+          Justification si aucune spécification VCEP du gène ne s’applique
+        </label>
+        <textarea id="vcep-exclusion-reason" rows="3"></textarea>
+        <label for="conflict-resolution">
+          Justification de la résolution des conflits
+        </label>
+        <textarea id="conflict-resolution" rows="3"></textarea>
+      </details>
+
+      <div class="action-bar">
+        <button id="evaluate" type="submit">Évaluer le variant</button>
+        <p id="status" role="status"></p>
+      </div>
+    </form>
+
+    <section id="output" class="card" aria-labelledby="result-title" hidden>
+      <div class="result-header">
+        <h2 id="result-title" tabindex="-1">Résultat</h2>
+        <div class="result-actions">
+          <button type="button" class="secondary" id="download">
+            Exporter en JSON
+          </button>
+          <button type="button" class="secondary" id="print">
+            Imprimer le rapport
+          </button>
+        </div>
+      </div>
+      <p class="notice" id="outdated" hidden>
+        Saisie modifiée. Relancez l’évaluation pour actualiser le rapport.
+      </p>
+      <div id="result-body"></div>
+    </section>
+  </main>
+</body>
+</html>
